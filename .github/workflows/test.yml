@@ -1,0 +1,43 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-macos:
+    name: swift test (macOS 15, Swift 6)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_16.app/Contents/Developer
+
+      - name: Swift version
+        run: swift --version
+
+      - name: Build
+        run: swift build
+
+      - name: Test
+        run: swift test --parallel
+
+  test-linux:
+    name: swift test (Linux, Swift 6.0)
+    runs-on: ubuntu-latest
+    container:
+      image: swift:6.0
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Swift version
+        run: swift --version
+
+      - name: Build
+        run: swift build
+
+      - name: Test
+        run: swift test --parallel
