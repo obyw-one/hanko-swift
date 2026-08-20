@@ -27,10 +27,8 @@ public enum HankoEd25519 {
     ///
     /// - Returns: (publicKey, privateKey) — 32 bytes pub, 32 bytes seed.
     public static func generateKeyPair() -> (publicKey: Data, privateKey: Data) {
-        // TODO(W3.1): Implement.
-        //   let priv = Curve25519.Signing.PrivateKey()
-        //   return (Data(priv.publicKey.rawRepresentation), Data(priv.rawRepresentation))
-        fatalError("HankoEd25519.generateKeyPair: not yet implemented (W3.1 sprint)")
+        let priv = Curve25519.Signing.PrivateKey()
+        return (Data(priv.publicKey.rawRepresentation), Data(priv.rawRepresentation))
     }
 
     /// Derive a keypair from a deterministic 32-byte seed.
@@ -38,18 +36,16 @@ public enum HankoEd25519 {
     /// Used for parity test vectors — both Go (`ed25519.NewKeyFromSeed`)
     /// and Swift must produce the same public key bytes from the same seed.
     ///
+    /// CRITICAL parity check: the Swift pubkey from a given seed must
+    /// match Go's ed25519.NewKeyFromSeed(seed).Public() exactly.
+    /// Verified via `Tests/HankoCryptoTests/Fixtures/sign-verify.json`.
+    ///
     /// - Parameter seed: 32 bytes.
     /// - Returns: (publicKey, privateKey).
     public static func keyPair(fromSeed seed: Data) throws -> (publicKey: Data, privateKey: Data) {
         guard seed.count == 32 else { throw Error.invalidSeedLength(seed.count) }
-        // TODO(W3.1): Implement.
-        //   - Curve25519.Signing.PrivateKey(rawRepresentation: seed)
-        //   - return (pub.rawRepresentation, seed)
-        //
-        // CRITICAL parity check: the Swift pubkey from a given seed must
-        // match Go's ed25519.NewKeyFromSeed(seed).Public() exactly.
-        // Verified via `Tests/HankoCryptoTests/Fixtures/sign-verify.json`.
-        fatalError("HankoEd25519.keyPair(fromSeed:): not yet implemented (W3.1 sprint)")
+        let priv = try Curve25519.Signing.PrivateKey(rawRepresentation: seed)
+        return (Data(priv.publicKey.rawRepresentation), seed)
     }
 
     // MARK: Sign / verify
@@ -62,8 +58,8 @@ public enum HankoEd25519 {
     /// - Returns: 64-byte Ed25519 signature.
     public static func sign(_ message: Data, privateKey: Data) throws -> Data {
         guard privateKey.count == 32 else { throw Error.invalidSeedLength(privateKey.count) }
-        // TODO(W3.1): Implement via Curve25519.Signing.PrivateKey.signature(for:).
-        fatalError("HankoEd25519.sign: not yet implemented (W3.1 sprint)")
+        let priv = try Curve25519.Signing.PrivateKey(rawRepresentation: privateKey)
+        return try Data(priv.signature(for: message))
     }
 
     /// Verify an Ed25519 signature.
@@ -76,9 +72,7 @@ public enum HankoEd25519 {
     public static func verify(signature: Data, message: Data, publicKey: Data) throws {
         guard signature.count == 64 else { throw Error.invalidSignatureLength(signature.count) }
         guard publicKey.count == 32 else { throw Error.invalidPublicKeyLength(publicKey.count) }
-        // TODO(W3.1): Implement via Curve25519.Signing.PublicKey.isValidSignature.
-        //   let pub = try Curve25519.Signing.PublicKey(rawRepresentation: publicKey)
-        //   guard pub.isValidSignature(signature, for: message) else { throw Error.signatureInvalid }
-        fatalError("HankoEd25519.verify: not yet implemented (W3.1 sprint)")
+        let pub = try Curve25519.Signing.PublicKey(rawRepresentation: publicKey)
+        guard pub.isValidSignature(signature, for: message) else { throw Error.signatureInvalid }
     }
 }
