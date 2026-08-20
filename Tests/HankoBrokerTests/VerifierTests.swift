@@ -11,22 +11,42 @@ import Foundation
 struct VerifierTests {
 
     @Test func validEnvelopeWithMatchingScopeIsAccepted() async throws {
-        // TODO(W3.2):
-        //   1. Generate keypair
-        //   2. Register Sigil in InMemoryHankoStore
-        //   3. Build a CapabilityToken with scope "sigma:portfolio:read",
-        //      audience "sigma-backend@majeluce.com"
-        //   4. Build AttestationEnvelope around it
-        //   5. Compute canonical body, sign with privkey
-        //   6. Verify with the same scope + audience → .ok(sigil)
+        let s = try await EnvelopeFactory.make(scope: "sigma:portfolio:read")
+        let outcome = try await s.verifier.verify(
+            envelope: s.envelope,
+            requestedScope: "sigma:portfolio:read",
+            audience: EnvelopeFactory.defaultAudience
+        )
+        guard case .ok(let sigil) = outcome else {
+            Issue.record("expected .ok, got \(outcome)")
+            return
+        }
+        #expect(sigil.id == s.sigil.id)
     }
 
     @Test func wildcardScopeMatchesSpecificRequest() async throws {
-        // TODO(W3.2): Granted scope "sigma:portfolio:*" should match
-        // requested "sigma:portfolio:read".
+        let s = try await EnvelopeFactory.make(scope: "sigma:portfolio:*")
+        let outcome = try await s.verifier.verify(
+            envelope: s.envelope,
+            requestedScope: "sigma:portfolio:read",
+            audience: EnvelopeFactory.defaultAudience
+        )
+        guard case .ok = outcome else {
+            Issue.record("expected .ok for wildcard grant, got \(outcome)")
+            return
+        }
     }
 
     @Test func deepWildcardMatchesMultiLevel() async throws {
-        // TODO(W3.2): Granted "sigma:**" matches "sigma:portfolio:export".
+        let s = try await EnvelopeFactory.make(scope: "sigma:**")
+        let outcome = try await s.verifier.verify(
+            envelope: s.envelope,
+            requestedScope: "sigma:portfolio:export",
+            audience: EnvelopeFactory.defaultAudience
+        )
+        guard case .ok = outcome else {
+            Issue.record("expected .ok for deep wildcard, got \(outcome)")
+            return
+        }
     }
 }

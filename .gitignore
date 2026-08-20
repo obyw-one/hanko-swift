@@ -1,0 +1,5 @@
+
+# kagami runtime state — only scopes.override.toml is source
+.kagami/history.db*
+.kagami/scopes.toml
+.kagami/tmp/

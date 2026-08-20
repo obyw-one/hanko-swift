@@ -1,0 +1,23 @@
+# .kagami/scopes.override.toml — hand-maintained scope source (kagami regenerates scopes.toml).
+# Registered 2026-08-20 with the W3.1–W3.3 implementation (crypto + verifier + parity tests).
+
+[[scopes]]
+name = "HankoCoreTests"
+language = "swift"
+package_path = "."
+timeout = 300
+description = "Wire types: Sigil / CapabilityToken / AttestationEnvelope / RevocationEntry Codable + Go interop shape (signature/audience omit-when-empty)."
+
+[[scopes]]
+name = "HankoCryptoTests"
+language = "swift"
+package_path = "."
+timeout = 300
+description = "W3.1: Ed25519 (CryptoKit) round-trip + Go seed parity; canonical JSON (Go-parity flavor) behavior + byte-parity vectors from docs/test-vectors."
+
+[[scopes]]
+name = "HankoBrokerTests"
+language = "swift"
+package_path = "."
+timeout = 300
+description = "W3.2/W3.3: HankoVerifier full pipeline (happy paths + 5 canonical denials) + cross-language sign-verify and canonical-JSON parity vectors."
