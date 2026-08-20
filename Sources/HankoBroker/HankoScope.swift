@@ -37,12 +37,25 @@ public struct HankoScope: Hashable, Sendable, CustomStringConvertible {
     ///   - `sigma:portfolio:read` matches `sigma:portfolio:write` → false
     ///   - `sigma:*` matches `sigma:portfolio:read` → false (needs `**`)
     public func matches(_ requested: HankoScope) -> Bool {
-        // TODO(W3.2): Implement.
-        //   Walk granted tokens against requested tokens:
-        //   - "**" at position i: consume rest of requested, return true
-        //   - "*"  at position i: requested[i] must exist, advance both
-        //   - literal: must equal requested[i], advance both
-        //   - end of granted: all requested must also have been consumed
-        fatalError("HankoScope.matches: not yet implemented (W3.2 sprint)")
+        let granted = tokens
+        let req = requested.tokens
+        var gi = 0
+        var ri = 0
+        while gi < granted.count {
+            let token = granted[gi]
+            if token == "**" {
+                // Greedy: consumes the rest of the requested scope.
+                return true
+            }
+            guard ri < req.count else { return false }
+            if token == "*" || token == req[ri] {
+                gi += 1
+                ri += 1
+                continue
+            }
+            return false
+        }
+        // End of granted: every requested token must also be consumed.
+        return ri == req.count
     }
 }
