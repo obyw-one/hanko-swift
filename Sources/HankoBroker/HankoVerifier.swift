@@ -21,7 +21,6 @@ import HankoCrypto
 // MARK: - HankoVerifier
 
 public actor HankoVerifier {
-
     public let store: any HankoStore
     public let nonceCache: HankoNonceCache
 

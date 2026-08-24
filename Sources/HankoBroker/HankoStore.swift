@@ -14,7 +14,6 @@ import HankoCore
 /// Implementations must be Sendable and concurrency-safe (actor or internal
 /// locking). The verifier calls these methods on every attestation check.
 public protocol HankoStore: Sendable {
-
     // MARK: Sigil lookup
 
     /// Return the registered Sigil for a given ID, or nil if unknown.
@@ -37,7 +36,6 @@ public protocol HankoStore: Sendable {
 /// In-memory implementation of `HankoStore`. Suitable for tests and small
 /// single-process deployments. NOT suitable for production multi-node setups.
 public actor InMemoryHankoStore: HankoStore {
-
     private var sigils: [String: HankoSigil] = [:]
     private var revoked: Set<String> = []
 
@@ -56,8 +54,8 @@ public actor InMemoryHankoStore: HankoStore {
     }
 
     public func revoke(_ entry: HankoRevocationEntry) async throws {
-        // TODO(W3.2): Insert into a real append-only log.
-        // For the in-mem variant, the set is sufficient.
+        // In-mem variant: the id set is sufficient. A real append-only
+        // revocation log arrives with the persistent store (W4 milestone).
         revoked.insert(entry.id)
     }
 }

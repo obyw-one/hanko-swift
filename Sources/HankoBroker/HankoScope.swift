@@ -27,7 +27,9 @@ public struct HankoScope: Hashable, Sendable, CustomStringConvertible {
         self.tokens = raw.split(separator: ":").map(String.init)
     }
 
-    public var description: String { raw }
+    public var description: String {
+        raw
+    }
 
     /// True if this scope (treated as granted) matches the requested scope.
     ///

@@ -1,15 +1,14 @@
 // VerifierTests.swift
 // Happy-path verifier scenarios.
 
-import Testing
 import Foundation
+import Testing
 @testable import HankoBroker
 @testable import HankoCore
 @testable import HankoCrypto
 
 @Suite("HankoVerifier — happy path")
 struct VerifierTests {
-
     @Test func validEnvelopeWithMatchingScopeIsAccepted() async throws {
         let s = try await EnvelopeFactory.make(scope: "sigma:portfolio:read")
         let outcome = try await s.verifier.verify(
@@ -17,7 +16,7 @@ struct VerifierTests {
             requestedScope: "sigma:portfolio:read",
             audience: EnvelopeFactory.defaultAudience
         )
-        guard case .ok(let sigil) = outcome else {
+        guard case let .ok(sigil) = outcome else {
             Issue.record("expected .ok, got \(outcome)")
             return
         }

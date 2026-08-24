@@ -13,17 +13,16 @@ import Foundation
 /// nonce used for replay protection. The verifier maintains a cache of
 /// recently-seen nonces and rejects duplicates.
 public enum HankoNonce {
-
     /// Generate a fresh 16-byte cryptographic random nonce via
     /// `SystemRandomNumberGenerator`.
     ///
     /// - Returns: 16 random bytes.
     public static func generate() -> Data {
-        // TODO(W3.1): Implement.
-        //   var bytes = [UInt8](repeating: 0, count: 16)
-        //   var rng = SystemRandomNumberGenerator()
-        //   for i in 0..<16 { bytes[i] = UInt8.random(in: .min ... .max, using: &rng) }
-        //   return Data(bytes)
-        fatalError("HankoNonce.generate: not yet implemented (W3.1 sprint)")
+        var bytes = [UInt8](repeating: 0, count: 16)
+        var rng = SystemRandomNumberGenerator()
+        for i in 0..<16 {
+            bytes[i] = UInt8.random(in: .min ... .max, using: &rng)
+        }
+        return Data(bytes)
     }
 }

@@ -17,11 +17,10 @@ struct TestScenario {
 }
 
 enum EnvelopeFactory {
-
     static let defaultAudience = "sigma-backend@majeluce.com"
 
     static func randomNonce() -> Data {
-        Data((0..<16).map { _ in UInt8.random(in: 0...255) })
+        HankoNonce.generate()
     }
 
     /// Build a signed envelope with one capability and register its Sigil.

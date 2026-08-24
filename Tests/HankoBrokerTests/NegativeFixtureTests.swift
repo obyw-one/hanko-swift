@@ -6,21 +6,20 @@
 // All 5 fixtures must produce a DENIED outcome (HankoVerifyError) with the
 // correct code. Mirrors the Go contract exactly.
 
-import Testing
 import Foundation
+import Testing
 @testable import HankoBroker
 @testable import HankoCore
 @testable import HankoCrypto
 
 @Suite("Negative fixtures — must all DENY")
 struct NegativeFixtureTests {
-
     private func expectDenied(
         _ outcome: HankoVerifier.Outcome,
         code: String,
         _ label: String
     ) {
-        guard case .denied(let error) = outcome else {
+        guard case let .denied(error) = outcome else {
             Issue.record("\(label): expected denial, got \(outcome)")
             return
         }

@@ -17,7 +17,6 @@ import Foundation
 /// - Reject nonces that have been previously inserted.
 /// - Expire entries after the TTL window to bound memory growth.
 public actor HankoNonceCache {
-
     private var seen: [Data: Date] = [:]
     public let ttl: TimeInterval
 
@@ -29,7 +28,9 @@ public actor HankoNonceCache {
     /// seen (replay detected).
     public func observe(_ nonce: Data) -> Bool {
         evictExpired()
-        if seen[nonce] != nil { return false }
+        if seen[nonce] != nil {
+            return false
+        }
         seen[nonce] = Date()
         return true
     }
