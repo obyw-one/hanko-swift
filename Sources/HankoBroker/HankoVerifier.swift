@@ -11,7 +11,8 @@
 //   5. Requested scope: matches at least one cap's scope
 //   6. Nonce replay: cap.nonce not previously observed
 //
-// On any failure: throws HankoVerifyError with the structured code.
+// Denials are returned as `.denied(HankoVerifyError)`; only infrastructure
+// failures (store errors, canonicalization errors) throw.
 
 import Foundation
 import HankoCore
@@ -49,34 +50,60 @@ public actor HankoVerifier {
         requestedScope: String,
         audience: String
     ) async throws -> Outcome {
-        // TODO(W3.2): Implement the full pipeline.
-        //
-        // Reference (Go) — broker/verifier.go:
-        //
-        //   1. if envelope.IsExpired() { return .denied(.capExpired) }
-        //
-        //   2. let sigil = try await store.sigil(byID: envelope.sigilID)
-        //      guard let sigil else { return .denied(.unknown("sigil_unknown")) }
-        //      let body = try HankoCanonicalJSON.encode(envelope.unsignedBody())
-        //      do { try HankoEd25519.verify(signature: envelope.signature, message: body, publicKey: sigil.publicKey) }
-        //      catch { return .denied(.signatureInvalid) }
-        //
-        //   3. if try await store.isRevoked(sigil.id) { return .denied(.sigilRevoked) }
-        //
-        //   4. for cap in envelope.caps {
-        //        if cap.isExpired { return .denied(.capExpired) }
-        //        if try await store.isRevoked(cap.id) { return .denied(.sigilRevoked) }
-        //        if cap.audience != audience { return .denied(.audienceMismatch(...)) }
-        //        let isNew = await nonceCache.observe(cap.nonce)
-        //        if !isNew { return .denied(.nonceReplayed) }
-        //      }
-        //
-        //   5. let req = HankoScope(requestedScope)
-        //      let granted = envelope.caps.first { HankoScope($0.scope).matches(req) }
-        //      guard granted != nil else { return .denied(.scopeMismatch(requested: requestedScope, granted: ...)) }
-        //
-        //   6. return .ok(sigil)
-        //
-        fatalError("HankoVerifier.verify: not yet implemented (W3.2 sprint)")
+        // 1. Envelope expiry.
+        if envelope.isExpired {
+            return .denied(.capExpired)
+        }
+
+        // 2. Signature over the canonical unsigned body, keyed by the
+        //    registered signing Sigil.
+        guard let sigil = try await store.sigil(byID: envelope.sigilID) else {
+            return .denied(.unknown("sigil_unknown"))
+        }
+        let body = try HankoCanonicalJSON.encode(envelope.unsignedBody())
+        do {
+            try HankoEd25519.verify(
+                signature: envelope.signature,
+                message: body,
+                publicKey: sigil.publicKey
+            )
+        } catch {
+            return .denied(.signatureInvalid)
+        }
+
+        // 3. Sigil revocation.
+        if try await store.isRevoked(sigil.id) {
+            return .denied(.sigilRevoked)
+        }
+
+        // 4. Per-cap checks: expiry, revocation, audience, nonce replay.
+        for cap in envelope.caps {
+            if cap.isExpired {
+                return .denied(.capExpired)
+            }
+            if try await store.isRevoked(cap.id) {
+                return .denied(.sigilRevoked)
+            }
+            if cap.audience != audience {
+                return .denied(.audienceMismatch(requested: audience, issued: cap.audience))
+            }
+            let isNew = await nonceCache.observe(cap.nonce)
+            if !isNew {
+                return .denied(.nonceReplayed)
+            }
+        }
+
+        // 5. Scope: at least one granted cap must match the request.
+        let requested = HankoScope(requestedScope)
+        let granted = envelope.caps.first { HankoScope($0.scope).matches(requested) }
+        guard granted != nil else {
+            return .denied(.scopeMismatch(
+                requested: requestedScope,
+                granted: envelope.caps.map(\.scope).joined(separator: ",")
+            ))
+        }
+
+        // 6. All checks passed.
+        return .ok(sigil)
     }
 }

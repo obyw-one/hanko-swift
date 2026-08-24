@@ -69,6 +69,34 @@ public struct HankoAttestationEnvelope: Sendable, Codable, Equatable {
         case signature
     }
 
+    /// Wire interop with the Go reference: the signed canonical body omits
+    /// the `signature` key entirely (spec §2.1 — deleted prior to signing),
+    /// so an empty signature is not encoded. An absent signature decodes as
+    /// empty, matching pre-sign envelopes.
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        version   = try c.decode(String.self, forKey: .version)
+        sigilID   = try c.decode(String.self, forKey: .sigilID)
+        caps      = try c.decode([HankoCapabilityToken].self, forKey: .caps)
+        issuer    = try c.decode(String.self, forKey: .issuer)
+        issuedAt  = try c.decode(Date.self, forKey: .issuedAt)
+        expiresAt = try c.decode(Date.self, forKey: .expiresAt)
+        signature = try c.decodeIfPresent(Data.self, forKey: .signature) ?? Data()
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(version,   forKey: .version)
+        try c.encode(sigilID,   forKey: .sigilID)
+        try c.encode(caps,      forKey: .caps)
+        try c.encode(issuer,    forKey: .issuer)
+        try c.encode(issuedAt,  forKey: .issuedAt)
+        try c.encode(expiresAt, forKey: .expiresAt)
+        if !signature.isEmpty {
+            try c.encode(signature, forKey: .signature)
+        }
+    }
+
     /// True when this envelope has passed its expiry.
     public var isExpired: Bool {
         expiresAt < Date()

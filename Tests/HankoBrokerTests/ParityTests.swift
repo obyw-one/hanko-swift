@@ -38,14 +38,54 @@ struct ParityTests {
         }
     }
 
+    private func hexData(_ hex: String) -> Data? {
+        let chars = Array(hex)
+        guard chars.count % 2 == 0 else { return nil }
+        var bytes: [UInt8] = []
+        for i in stride(from: 0, to: chars.count, by: 2) {
+            guard let b = UInt8(String(chars[i...i+1]), radix: 16) else { return nil }
+            bytes.append(b)
+        }
+        return Data(bytes)
+    }
+
     @Test func signVerifyVectorsLoadAndVerify() throws {
-        // TODO(W3.3):
-        //   1. Bundle.module.url(forResource: "sign-verify", withExtension: "json")
-        //   2. Decode [SignVerifyVector]
-        //   3. For each vector:
-        //      a. Derive (pub, priv) from seedHex → assert pub.base64 == publicKeyB64
-        //      b. Decode canonicalBody as UTF-8 bytes
-        //      c. Decode signatureB64 as bytes
-        //      d. HankoEd25519.verify(signature, message: canonicalBody, publicKey: pub) → no throw
+        let url = try #require(
+            Bundle.module.url(forResource: "sign-verify", withExtension: "json"),
+            "sign-verify.json fixture missing from bundle"
+        )
+        let vectors = try JSONDecoder().decode([SignVerifyVector].self, from: Data(contentsOf: url))
+        #expect(!vectors.isEmpty)
+
+        for v in vectors {
+            // a. Seed → pubkey parity with Go's ed25519.NewKeyFromSeed.
+            let seed = try #require(hexData(v.seedHex), "\(v.id): bad seed hex")
+            let (pub, _) = try HankoEd25519.keyPair(fromSeed: seed)
+            #expect(pub.base64EncodedString() == v.publicKeyB64, "\(v.id): pubkey parity")
+
+            // b + c. Go-produced signature over the Go-produced canonical
+            // body must verify with the derived key.
+            let body = Data(v.canonicalBody.utf8)
+            let signature = try #require(Data(base64Encoded: v.signatureB64), "\(v.id): bad sig b64")
+            try HankoEd25519.verify(signature: signature, message: body, publicKey: pub)
+        }
+    }
+
+    @Test func canonicalJSONVectorsMatchByteForByte() throws {
+        let url = try #require(
+            Bundle.module.url(forResource: "canonical-json", withExtension: "json"),
+            "canonical-json.json fixture missing from bundle"
+        )
+        let raw = try JSONSerialization.jsonObject(with: Data(contentsOf: url))
+        let entries = try #require(raw as? [[String: Any]])
+        #expect(!entries.isEmpty)
+
+        for e in entries {
+            let id = try #require(e["id"] as? String)
+            let input = try #require(e["input"])
+            let expected = try #require(e["expected_canonical"] as? String)
+            let got = String(decoding: try HankoCanonicalJSON.encode(input), as: UTF8.self)
+            #expect(got == expected, "\(id): byte parity with Go")
+        }
     }
 }

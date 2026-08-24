@@ -28,16 +28,15 @@ public actor HankoNonceCache {
     /// Insert a nonce. Returns true if it was new, false if it was already
     /// seen (replay detected).
     public func observe(_ nonce: Data) -> Bool {
-        // TODO(W3.2): Implement.
-        //   evictExpired()
-        //   if seen[nonce] != nil { return false }
-        //   seen[nonce] = Date()
-        //   return true
-        fatalError("HankoNonceCache.observe: not yet implemented (W3.2 sprint)")
+        evictExpired()
+        if seen[nonce] != nil { return false }
+        seen[nonce] = Date()
+        return true
     }
 
     /// Evict expired entries. Called lazily on each observe.
     private func evictExpired() {
-        // TODO(W3.2): Walk seen, drop entries older than ttl.
+        let cutoff = Date().addingTimeInterval(-ttl)
+        seen = seen.filter { $0.value >= cutoff }
     }
 }

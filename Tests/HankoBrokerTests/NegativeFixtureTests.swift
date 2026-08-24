@@ -15,24 +15,91 @@ import Foundation
 @Suite("Negative fixtures — must all DENY")
 struct NegativeFixtureTests {
 
+    private func expectDenied(
+        _ outcome: HankoVerifier.Outcome,
+        code: String,
+        _ label: String
+    ) {
+        guard case .denied(let error) = outcome else {
+            Issue.record("\(label): expected denial, got \(outcome)")
+            return
+        }
+        #expect(error.code == code, Comment(rawValue: label))
+    }
+
     @Test func expiredCapIsRejected() async throws {
-        // TODO(W3.3): cap.expires_at in the past → .denied(.capExpired)
+        let s = try await EnvelopeFactory.make(capExpiresIn: -60)
+        let outcome = try await s.verifier.verify(
+            envelope: s.envelope,
+            requestedScope: "sigma:portfolio:read",
+            audience: EnvelopeFactory.defaultAudience
+        )
+        expectDenied(outcome, code: "capability_expired", "expired cap")
     }
 
     @Test func tamperedAttestationIsRejected() async throws {
-        // TODO(W3.3): Flip 1 byte in signature → .denied(.signatureInvalid)
+        let s = try await EnvelopeFactory.make()
+        var tamperedSig = s.envelope.signature
+        tamperedSig[0] ^= 0x01
+        let tampered = HankoAttestationEnvelope(
+            sigilID: s.envelope.sigilID,
+            caps: s.envelope.caps,
+            issuer: s.envelope.issuer,
+            issuedAt: s.envelope.issuedAt,
+            expiresAt: s.envelope.expiresAt,
+            signature: tamperedSig
+        )
+        let outcome = try await s.verifier.verify(
+            envelope: tampered,
+            requestedScope: "sigma:portfolio:read",
+            audience: EnvelopeFactory.defaultAudience
+        )
+        expectDenied(outcome, code: "signature_invalid", "tampered signature")
     }
 
     @Test func revokedSigilIsRejected() async throws {
-        // TODO(W3.3): store.revoke(sigil.id) before verify → .denied(.sigilRevoked)
+        let s = try await EnvelopeFactory.make()
+        try await s.store.revoke(HankoRevocationEntry(
+            id: s.sigil.id,
+            targetType: "sigil",
+            reason: "test revocation",
+            revokedAt: Date(),
+            revokedBy: "test-suite"
+        ))
+        let outcome = try await s.verifier.verify(
+            envelope: s.envelope,
+            requestedScope: "sigma:portfolio:read",
+            audience: EnvelopeFactory.defaultAudience
+        )
+        expectDenied(outcome, code: "sigil_revoked", "revoked sigil")
     }
 
     @Test func replayAttackIsRejected() async throws {
-        // TODO(W3.3): Same cap.nonce verified twice → second attempt .denied(.nonceReplayed)
+        let s = try await EnvelopeFactory.make()
+        let first = try await s.verifier.verify(
+            envelope: s.envelope,
+            requestedScope: "sigma:portfolio:read",
+            audience: EnvelopeFactory.defaultAudience
+        )
+        guard case .ok = first else {
+            Issue.record("first verification should succeed, got \(first)")
+            return
+        }
+        let second = try await s.verifier.verify(
+            envelope: s.envelope,
+            requestedScope: "sigma:portfolio:read",
+            audience: EnvelopeFactory.defaultAudience
+        )
+        expectDenied(second, code: "nonce_replayed", "nonce replay")
     }
 
     @Test func scopeMismatchIsRejected() async throws {
-        // TODO(W3.3): Granted "sigma:portfolio:read", requested
-        // "sigma:portfolio:write" → .denied(.scopeMismatch)
+        let s = try await EnvelopeFactory.make(scope: "sigma:portfolio:read")
+        let outcome = try await s.verifier.verify(
+            envelope: s.envelope,
+            requestedScope: "sigma:portfolio:write",
+            audience: EnvelopeFactory.defaultAudience
+        )
+        expectDenied(outcome, code: "scope_mismatch", "scope mismatch")
     }
 }

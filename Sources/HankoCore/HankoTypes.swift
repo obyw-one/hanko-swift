@@ -128,6 +128,34 @@ public struct HankoCapabilityToken: Sendable, Codable, Equatable {
         case audience
     }
 
+    /// Wire interop with the Go reference (protocol/types.go), whose
+    /// CapabilityToken has no `audience` field yet: an absent audience
+    /// decodes as "", and an empty audience is omitted on encode so
+    /// canonical bodies stay byte-compatible with Go-issued tokens.
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id        = try c.decode(String.self, forKey: .id)
+        sigilID   = try c.decode(String.self, forKey: .sigilID)
+        scope     = try c.decode(String.self, forKey: .scope)
+        issuedAt  = try c.decode(Date.self, forKey: .issuedAt)
+        expiresAt = try c.decode(Date.self, forKey: .expiresAt)
+        nonce     = try c.decode(Data.self, forKey: .nonce)
+        audience  = try c.decodeIfPresent(String.self, forKey: .audience) ?? ""
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id,        forKey: .id)
+        try c.encode(sigilID,   forKey: .sigilID)
+        try c.encode(scope,     forKey: .scope)
+        try c.encode(issuedAt,  forKey: .issuedAt)
+        try c.encode(expiresAt, forKey: .expiresAt)
+        try c.encode(nonce,     forKey: .nonce)
+        if !audience.isEmpty {
+            try c.encode(audience, forKey: .audience)
+        }
+    }
+
     /// True when this token has passed its expiry.
     public var isExpired: Bool {
         expiresAt < Date()
