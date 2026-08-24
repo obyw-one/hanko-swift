@@ -12,38 +12,39 @@
 //
 // Any byte-level mismatch → parity broken → test fails.
 
-import Testing
 import Foundation
+import Testing
 @testable import HankoBroker
 @testable import HankoCore
 @testable import HankoCrypto
 
+/// One entry of `Fixtures/sign-verify.json` — file-scoped to keep type
+/// nesting within the fleet lint limit.
+private struct SignVerifyVector: Decodable {
+    let id: String
+    let description: String
+    let seedHex: String
+    let publicKeyB64: String
+    let canonicalBody: String
+    let signatureB64: String
+
+    enum CodingKeys: String, CodingKey {
+        case id, description
+        case seedHex = "seed_hex"
+        case publicKeyB64 = "public_key_b64"
+        case canonicalBody = "canonical_body"
+        case signatureB64 = "signature_b64"
+    }
+}
+
 @Suite("Cross-language parity with Go")
 struct ParityTests {
-
-    struct SignVerifyVector: Decodable {
-        let id: String
-        let description: String
-        let seedHex: String
-        let publicKeyB64: String
-        let canonicalBody: String
-        let signatureB64: String
-
-        enum CodingKeys: String, CodingKey {
-            case id, description
-            case seedHex       = "seed_hex"
-            case publicKeyB64  = "public_key_b64"
-            case canonicalBody = "canonical_body"
-            case signatureB64  = "signature_b64"
-        }
-    }
-
     private func hexData(_ hex: String) -> Data? {
         let chars = Array(hex)
         guard chars.count % 2 == 0 else { return nil }
         var bytes: [UInt8] = []
         for i in stride(from: 0, to: chars.count, by: 2) {
-            guard let b = UInt8(String(chars[i...i+1]), radix: 16) else { return nil }
+            guard let b = UInt8(String(chars[i...i + 1]), radix: 16) else { return nil }
             bytes.append(b)
         }
         return Data(bytes)
@@ -84,7 +85,7 @@ struct ParityTests {
             let id = try #require(e["id"] as? String)
             let input = try #require(e["input"])
             let expected = try #require(e["expected_canonical"] as? String)
-            let got = String(decoding: try HankoCanonicalJSON.encode(input), as: UTF8.self)
+            let got = try #require(String(bytes: HankoCanonicalJSON.encode(input), encoding: .utf8))
             #expect(got == expected, "\(id): byte parity with Go")
         }
     }

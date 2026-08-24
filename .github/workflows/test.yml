@@ -1,0 +1,27 @@
+# Salvaged from origin/main d629c00 (single-module era) during the 2026-08-24
+# develop→main promotion. Linux job intentionally dropped: HankoCrypto/HankoTypes
+# import CryptoKit (Apple-only); Linux support = swift-crypto conditional import,
+# tracked as roadmap (needed for the Hetzner/Vapor end-state).
+name: test
+
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+    branches: [develop, main]
+
+jobs:
+  test-macos:
+    name: swift test (macOS 15, Swift 6)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Swift version
+        run: swift --version
+
+      - name: Build
+        run: swift build
+
+      - name: Test
+        run: swift test --parallel

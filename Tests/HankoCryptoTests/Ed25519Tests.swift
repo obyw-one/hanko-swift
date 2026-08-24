@@ -1,13 +1,12 @@
 // Ed25519Tests.swift
 // Ed25519 sign / verify round-trip + cross-language parity from Go seed.
 
-import Testing
 import Foundation
+import Testing
 @testable import HankoCrypto
 
 @Suite("HankoEd25519")
 struct Ed25519Tests {
-
     @Test func generateKeyPairProducesUsableKeys() throws {
         let (pub, priv) = HankoEd25519.generateKeyPair()
         #expect(pub.count == 32)

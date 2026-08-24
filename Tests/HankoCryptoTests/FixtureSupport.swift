@@ -15,10 +15,10 @@ struct SignVerifyVector: Decodable {
 
     enum CodingKeys: String, CodingKey {
         case id, description
-        case seedHex       = "seed_hex"
-        case publicKeyB64  = "public_key_b64"
+        case seedHex = "seed_hex"
+        case publicKeyB64 = "public_key_b64"
         case canonicalBody = "canonical_body"
-        case signatureB64  = "signature_b64"
+        case signatureB64 = "signature_b64"
     }
 
     static func load() throws -> [SignVerifyVector] {
@@ -47,7 +47,8 @@ struct CanonicalVector {
         return try entries.map { e in
             guard let id = e["id"] as? String,
                   let input = e["input"],
-                  let expected = e["expected_canonical"] as? String else {
+                  let expected = e["expected_canonical"] as? String else
+            {
                 throw FixtureError.malformed("canonical-json.json entry")
             }
             return CanonicalVector(id: id, input: input, expected: expected)
@@ -68,7 +69,7 @@ extension Data {
         var bytes: [UInt8] = []
         bytes.reserveCapacity(chars.count / 2)
         for i in stride(from: 0, to: chars.count, by: 2) {
-            guard let byte = UInt8(String(chars[i...i+1]), radix: 16) else { return nil }
+            guard let byte = UInt8(String(chars[i...i + 1]), radix: 16) else { return nil }
             bytes.append(byte)
         }
         self.init(bytes)

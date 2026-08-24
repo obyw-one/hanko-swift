@@ -23,7 +23,6 @@ import HankoCore
 // MARK: - HankoCanonicalJSON
 
 public enum HankoCanonicalJSON {
-
     // MARK: Errors
 
     public enum Error: Swift.Error, Sendable, Equatable {
@@ -52,7 +51,7 @@ public enum HankoCanonicalJSON {
     ///
     /// Internally: encode via standard JSONEncoder (RFC3339 dates, base64
     /// data) → JSONSerialization to a generic value → canonical re-encode.
-    public static func encode<T: Encodable>(_ value: T) throws -> Data {
+    public static func encode(_ value: some Encodable) throws -> Data {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .custom { date, enc in
             var c = enc.singleValueContainer()
@@ -100,39 +99,51 @@ public enum HankoCanonicalJSON {
             out += d.base64EncodedString()
             out += "\""
         case let dict as [String: Any]:
-            // Byte-wise key sort — mirrors Go sort.Strings over UTF-8 bytes.
-            let keys = dict.keys.sorted {
-                Array($0.utf8).lexicographicallyPrecedes(Array($1.utf8))
-            }
-            out += "{"
-            var first = true
-            for k in keys {
-                if !first { out += "," }
-                first = false
-                out += "\""
-                out += CanonicalString.escape(k)
-                out += "\":"
-                try write(dict[k]!, into: &out)
-            }
-            out += "}"
+            try writeObject(dict, into: &out)
         case let arr as [Any]:
-            out += "["
-            var first = true
-            for item in arr {
-                if !first { out += "," }
-                first = false
-                try write(item, into: &out)
-            }
-            out += "]"
+            try writeArray(arr, into: &out)
         default:
             throw Error.unsupportedType(String(describing: type(of: value)))
         }
+    }
+
+    private static func writeObject(_ dict: [String: Any], into out: inout String) throws {
+        // Byte-wise key sort — mirrors Go sort.Strings over UTF-8 bytes.
+        let keys = dict.keys.sorted {
+            Array($0.utf8).lexicographicallyPrecedes(Array($1.utf8))
+        }
+        out += "{"
+        var first = true
+        for k in keys {
+            if !first {
+                out += ","
+            }
+            first = false
+            out += "\""
+            out += CanonicalString.escape(k)
+            out += "\":"
+            try write(dict[k]!, into: &out)
+        }
+        out += "}"
+    }
+
+    private static func writeArray(_ arr: [Any], into out: inout String) throws {
+        out += "["
+        var first = true
+        for item in arr {
+            if !first {
+                out += ","
+            }
+            first = false
+            try write(item, into: &out)
+        }
+        out += "]"
     }
 }
 
 // MARK: - Helpers
 
-internal enum CanonicalNumber {
+enum CanonicalNumber {
     /// Format a number. Integral values render as plain integers — the only
     /// numeric shape Hanko protocol types produce. Other finite doubles use
     /// Swift's shortest round-trip representation (matches Go for common
@@ -146,33 +157,30 @@ internal enum CanonicalNumber {
     }
 }
 
-internal enum CanonicalString {
+enum CanonicalString {
     /// Escape a string exactly like Go's `encoding/json` (HTML escaping ON):
     /// quote and backslash get short escapes, as do \n \r \t; other control
     /// chars (below 0x20) become \u00xx with lowercase hex; the HTML chars
     /// < > & become < > &; U+2028/U+2029 become  / ;
     /// all other Unicode passes through as UTF-8.
+    /// Fixed escapes, mirroring Go `encoding/json` exactly.
+    static let fixedEscapes: [Unicode.Scalar: String] = [
+        "\"": "\\\"", "\\": "\\\\",
+        "\n": "\\n", "\r": "\\r", "\t": "\\t",
+        "<": "\\u003c", ">": "\\u003e", "&": "\\u0026",
+        "\u{2028}": "\\u2028", "\u{2029}": "\\u2029",
+    ]
+
     static func escape(_ s: String) -> String {
         var out = ""
         out.reserveCapacity(s.count + 2)
         for scalar in s.unicodeScalars {
-            switch scalar {
-            case "\"":       out += "\\\""
-            case "\\":       out += "\\\\"
-            case "\n":       out += "\\n"
-            case "\r":       out += "\\r"
-            case "\t":       out += "\\t"
-            case "<":        out += "\\u003c"
-            case ">":        out += "\\u003e"
-            case "&":        out += "\\u0026"
-            case "\u{2028}": out += "\\u2028"
-            case "\u{2029}": out += "\\u2029"
-            default:
-                if scalar.value < 0x20 {
-                    out += String(format: "\\u%04x", scalar.value)
-                } else {
-                    out.unicodeScalars.append(scalar)
-                }
+            if let fixed = fixedEscapes[scalar] {
+                out += fixed
+            } else if scalar.value < 0x20 {
+                out += String(format: "\\u%04x", scalar.value)
+            } else {
+                out.unicodeScalars.append(scalar)
             }
         }
         return out

@@ -47,20 +47,20 @@ public struct HankoSigil: Sendable, Codable, Equatable {
         expiresAt: Date? = nil,
         metadata: [String: String] = [:]
     ) {
-        self.id         = id
-        self.subject    = subject
-        self.publicKey  = publicKey
-        self.createdAt  = createdAt
-        self.expiresAt  = expiresAt
-        self.metadata   = metadata
+        self.id = id
+        self.subject = subject
+        self.publicKey = publicKey
+        self.createdAt = createdAt
+        self.expiresAt = expiresAt
+        self.metadata = metadata
     }
 
     enum CodingKeys: String, CodingKey {
         case id
         case subject
-        case publicKey  = "public_key"
-        case createdAt  = "created_at"
-        case expiresAt  = "expires_at"
+        case publicKey = "public_key"
+        case createdAt = "created_at"
+        case expiresAt = "expires_at"
         case metadata
     }
 
@@ -109,20 +109,20 @@ public struct HankoCapabilityToken: Sendable, Codable, Equatable {
         nonce: Data,
         audience: String
     ) {
-        self.id        = id
-        self.sigilID   = sigilID
-        self.scope     = scope
-        self.issuedAt  = issuedAt
+        self.id = id
+        self.sigilID = sigilID
+        self.scope = scope
+        self.issuedAt = issuedAt
         self.expiresAt = expiresAt
-        self.nonce     = nonce
-        self.audience  = audience
+        self.nonce = nonce
+        self.audience = audience
     }
 
     enum CodingKeys: String, CodingKey {
         case id
-        case sigilID   = "sigil_id"
+        case sigilID = "sigil_id"
         case scope
-        case issuedAt  = "issued_at"
+        case issuedAt = "issued_at"
         case expiresAt = "expires_at"
         case nonce
         case audience
@@ -134,23 +134,23 @@ public struct HankoCapabilityToken: Sendable, Codable, Equatable {
     /// canonical bodies stay byte-compatible with Go-issued tokens.
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
-        id        = try c.decode(String.self, forKey: .id)
-        sigilID   = try c.decode(String.self, forKey: .sigilID)
-        scope     = try c.decode(String.self, forKey: .scope)
-        issuedAt  = try c.decode(Date.self, forKey: .issuedAt)
+        id = try c.decode(String.self, forKey: .id)
+        sigilID = try c.decode(String.self, forKey: .sigilID)
+        scope = try c.decode(String.self, forKey: .scope)
+        issuedAt = try c.decode(Date.self, forKey: .issuedAt)
         expiresAt = try c.decode(Date.self, forKey: .expiresAt)
-        nonce     = try c.decode(Data.self, forKey: .nonce)
-        audience  = try c.decodeIfPresent(String.self, forKey: .audience) ?? ""
+        nonce = try c.decode(Data.self, forKey: .nonce)
+        audience = try c.decodeIfPresent(String.self, forKey: .audience) ?? ""
     }
 
     public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
-        try c.encode(id,        forKey: .id)
-        try c.encode(sigilID,   forKey: .sigilID)
-        try c.encode(scope,     forKey: .scope)
-        try c.encode(issuedAt,  forKey: .issuedAt)
+        try c.encode(id, forKey: .id)
+        try c.encode(sigilID, forKey: .sigilID)
+        try c.encode(scope, forKey: .scope)
+        try c.encode(issuedAt, forKey: .issuedAt)
         try c.encode(expiresAt, forKey: .expiresAt)
-        try c.encode(nonce,     forKey: .nonce)
+        try c.encode(nonce, forKey: .nonce)
         if !audience.isEmpty {
             try c.encode(audience, forKey: .audience)
         }
@@ -168,10 +168,16 @@ public struct HankoCapabilityToken: Sendable, Codable, Equatable {
 
     /// Human-readable expiry label.
     public var expiryLabel: String {
-        if isExpired { return "Expired" }
+        if isExpired {
+            return "Expired"
+        }
         let remaining = expiresAt.timeIntervalSinceNow
-        if remaining < 60 { return "< 1 min" }
-        if remaining < 3600 { return "\(Int(remaining / 60))m" }
+        if remaining < 60 {
+            return "< 1 min"
+        }
+        if remaining < 3600 {
+            return "\(Int(remaining / 60))m"
+        }
         return "\(Int(remaining / 3600))h"
     }
 }
@@ -200,19 +206,19 @@ public struct HankoRevocationEntry: Sendable, Codable, Equatable {
         revokedAt: Date,
         revokedBy: String
     ) {
-        self.id         = id
+        self.id = id
         self.targetType = targetType
-        self.reason     = reason
-        self.revokedAt  = revokedAt
-        self.revokedBy  = revokedBy
+        self.reason = reason
+        self.revokedAt = revokedAt
+        self.revokedBy = revokedBy
     }
 
     enum CodingKeys: String, CodingKey {
         case id
         case targetType = "target_type"
         case reason
-        case revokedAt  = "revoked_at"
-        case revokedBy  = "revoked_by"
+        case revokedAt = "revoked_at"
+        case revokedBy = "revoked_by"
     }
 }
 
@@ -232,13 +238,13 @@ public enum HankoVerifyError: Error, Sendable, Equatable {
 
     public var code: String {
         switch self {
-        case .signatureInvalid:             return "signature_invalid"
-        case .sigilRevoked:                 return "sigil_revoked"
-        case .capExpired:                   return "capability_expired"
-        case .nonceReplayed:                return "nonce_replayed"
-        case .scopeMismatch:                return "scope_mismatch"
-        case .audienceMismatch:             return "audience_mismatch"
-        case .unknown(let c):               return c
+        case .signatureInvalid: "signature_invalid"
+        case .sigilRevoked: "sigil_revoked"
+        case .capExpired: "capability_expired"
+        case .nonceReplayed: "nonce_replayed"
+        case .scopeMismatch: "scope_mismatch"
+        case .audienceMismatch: "audience_mismatch"
+        case let .unknown(c): c
         }
     }
 }

@@ -1,16 +1,15 @@
 // CanonicalJSONTests.swift
 // Canonical JSON behavior (Go-parity flavor) + parity vectors from Go.
 
-import Testing
 import Foundation
-@testable import HankoCrypto
+import Testing
 @testable import HankoCore
+@testable import HankoCrypto
 
 @Suite("HankoCanonicalJSON — Go-parity canonical form")
 struct CanonicalJSONTests {
-
     private func canonical(_ value: Any) throws -> String {
-        String(decoding: try HankoCanonicalJSON.encode(value), as: UTF8.self)
+        try #require(String(bytes: HankoCanonicalJSON.encode(value), encoding: .utf8))
     }
 
     // MARK: Basics
@@ -41,10 +40,14 @@ struct CanonicalJSONTests {
 
     @Test func datesUseRFC3339Z() throws {
         var comps = DateComponents()
-        comps.year = 2026; comps.month = 6; comps.day = 6
-        comps.hour = 12; comps.minute = 0; comps.second = 0
+        comps.year = 2026
+        comps.month = 6
+        comps.day = 6
+        comps.hour = 12
+        comps.minute = 0
+        comps.second = 0
         comps.timeZone = TimeZone(identifier: "UTC")
-        let date = Calendar(identifier: .gregorian).date(from: comps)!
+        let date = try #require(Calendar(identifier: .gregorian).date(from: comps))
         #expect(try canonical(["at": date]) == #"{"at":"2026-06-06T12:00:00Z"}"#)
     }
 
@@ -59,10 +62,10 @@ struct CanonicalJSONTests {
             sigilID: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
             caps: [],
             issuer: "hanko-broker@obyw.one",
-            issuedAt: Date(timeIntervalSince1970: 1_780_747_200),   // 2026-06-06T12:00:00Z
-            expiresAt: Date(timeIntervalSince1970: 1_780_750_800)   // 2026-06-06T13:00:00Z
+            issuedAt: Date(timeIntervalSince1970: 1_780_747_200), // 2026-06-06T12:00:00Z
+            expiresAt: Date(timeIntervalSince1970: 1_780_750_800) // 2026-06-06T13:00:00Z
         )
-        let body = String(decoding: try HankoCanonicalJSON.encode(envelope.unsignedBody()), as: UTF8.self)
+        let body = try #require(String(bytes: HankoCanonicalJSON.encode(envelope.unsignedBody()), encoding: .utf8))
         #expect(!body.contains("signature"))
         #expect(body.hasPrefix(#"{"caps":[]"#))
     }

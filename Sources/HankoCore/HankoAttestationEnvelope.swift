@@ -50,21 +50,21 @@ public struct HankoAttestationEnvelope: Sendable, Codable, Equatable {
         expiresAt: Date,
         signature: Data = Data()
     ) {
-        self.version    = version
-        self.sigilID    = sigilID
-        self.caps       = caps
-        self.issuer     = issuer
-        self.issuedAt   = issuedAt
-        self.expiresAt  = expiresAt
-        self.signature  = signature
+        self.version = version
+        self.sigilID = sigilID
+        self.caps = caps
+        self.issuer = issuer
+        self.issuedAt = issuedAt
+        self.expiresAt = expiresAt
+        self.signature = signature
     }
 
     enum CodingKeys: String, CodingKey {
         case version
-        case sigilID   = "sigil_id"
+        case sigilID = "sigil_id"
         case caps
         case issuer
-        case issuedAt  = "issued_at"
+        case issuedAt = "issued_at"
         case expiresAt = "expires_at"
         case signature
     }
@@ -75,22 +75,22 @@ public struct HankoAttestationEnvelope: Sendable, Codable, Equatable {
     /// empty, matching pre-sign envelopes.
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
-        version   = try c.decode(String.self, forKey: .version)
-        sigilID   = try c.decode(String.self, forKey: .sigilID)
-        caps      = try c.decode([HankoCapabilityToken].self, forKey: .caps)
-        issuer    = try c.decode(String.self, forKey: .issuer)
-        issuedAt  = try c.decode(Date.self, forKey: .issuedAt)
+        version = try c.decode(String.self, forKey: .version)
+        sigilID = try c.decode(String.self, forKey: .sigilID)
+        caps = try c.decode([HankoCapabilityToken].self, forKey: .caps)
+        issuer = try c.decode(String.self, forKey: .issuer)
+        issuedAt = try c.decode(Date.self, forKey: .issuedAt)
         expiresAt = try c.decode(Date.self, forKey: .expiresAt)
         signature = try c.decodeIfPresent(Data.self, forKey: .signature) ?? Data()
     }
 
     public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
-        try c.encode(version,   forKey: .version)
-        try c.encode(sigilID,   forKey: .sigilID)
-        try c.encode(caps,      forKey: .caps)
-        try c.encode(issuer,    forKey: .issuer)
-        try c.encode(issuedAt,  forKey: .issuedAt)
+        try c.encode(version, forKey: .version)
+        try c.encode(sigilID, forKey: .sigilID)
+        try c.encode(caps, forKey: .caps)
+        try c.encode(issuer, forKey: .issuer)
+        try c.encode(issuedAt, forKey: .issuedAt)
         try c.encode(expiresAt, forKey: .expiresAt)
         if !signature.isEmpty {
             try c.encode(signature, forKey: .signature)
@@ -114,11 +114,11 @@ public struct HankoAttestationEnvelope: Sendable, Codable, Equatable {
     /// with the `signature` field deleted from the map prior to signing.
     public func unsignedBody() -> HankoAttestationEnvelope {
         HankoAttestationEnvelope(
-            version:   version,
-            sigilID:   sigilID,
-            caps:      caps,
-            issuer:    issuer,
-            issuedAt:  issuedAt,
+            version: version,
+            sigilID: sigilID,
+            caps: caps,
+            issuer: issuer,
+            issuedAt: issuedAt,
             expiresAt: expiresAt,
             signature: Data()
         )

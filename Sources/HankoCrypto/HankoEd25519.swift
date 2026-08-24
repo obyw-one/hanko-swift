@@ -11,7 +11,6 @@ import Foundation
 // MARK: - HankoEd25519
 
 public enum HankoEd25519 {
-
     // MARK: Errors
 
     public enum Error: Swift.Error, Sendable, Equatable {
